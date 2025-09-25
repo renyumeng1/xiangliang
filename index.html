@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>箱梁内模形变实时监测与自适应控制系统演示平台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Han+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="background-grid"></div>
+  <header class="app-header">
+    <div class="logo-area">
+      <div class="logo-symbol">IM</div>
+      <div class="logo-text">
+        <h1>箱梁内模形变智慧控制中心</h1>
+        <p>面向高速铁路箱梁预制的全域感知 · 智能诊断 · 自适应调控一体化平台</p>
+      </div>
+    </div>
+    <nav class="main-nav">
+      <a href="#painpoints">施工痛点</a>
+      <a href="#architecture">系统架构</a>
+      <a href="#dashboard">实时监控</a>
+      <a href="#control">调控策略</a>
+      <a href="#deployment">施工应用</a>
+      <a href="#outcome">成效评估</a>
+    </nav>
+    <button class="primary-btn" id="startTour">开启演示</button>
+  </header>
+
+  <main>
+    <section class="hero" id="hero">
+      <div class="hero-content">
+        <h2>构建内模形变“感知-认知-行动”闭环</h2>
+        <p>通过激光点云、高精度传感、数字孪生与自适应PID控制，打造全周期的内模形态保障体系。</p>
+        <div class="hero-actions">
+          <button class="primary-btn" data-target="#dashboard">进入控制中心</button>
+          <button class="ghost-btn" data-target="#architecture">查看系统设计</button>
+        </div>
+        <ul class="hero-highlights">
+          <li><span>±2mm</span> 形变检测精度</li>
+          <li><span>&lt; 30s</span> 全链路响应</li>
+          <li><span>1876片</span> 工程验证成果</li>
+        </ul>
+      </div>
+      <div class="hero-visual">
+        <div class="digital-twin" aria-hidden="true">
+          <div class="beam"></div>
+          <div class="laser"></div>
+          <div class="sensor sensor-a"></div>
+          <div class="sensor sensor-b"></div>
+          <div class="sensor sensor-c"></div>
+          <div class="sensor sensor-d"></div>
+        </div>
+        <div class="status-cards">
+          <div class="status-card">
+            <h3>点云刷新</h3>
+            <p><span id="scanRate">1.6</span> 次/分钟</p>
+          </div>
+          <div class="status-card">
+            <h3>液压执行</h3>
+            <p>调校指令响应 <span id="actuatorDelay">18</span> 秒</p>
+          </div>
+          <div class="status-card">
+            <h3>安全裕量</h3>
+            <p>整体稳定度 <span id="stabilityScore">98%</span></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="painpoints">
+      <header class="panel-header">
+        <h2>3.1 箱梁内模施工形变控制存在的问题</h2>
+        <p>聚焦传统工艺在实时性、覆盖率、决策链条与前瞻性方面的四大瓶颈。</p>
+      </header>
+      <div class="painpoint-grid">
+        <article class="painpoint-card">
+          <h3>侧压力导致的形态失稳</h3>
+          <p>混凝土浇筑过程中的不均匀侧压力引发顶板下沉、侧鼓、接缝张开等失稳模式。</p>
+          <div class="painpoint-tags">
+            <span>局部屈曲</span>
+            <span>整体偏移</span>
+            <span>接缝张开</span>
+          </div>
+        </article>
+        <article class="painpoint-card">
+          <h3>人工监测滞后且覆盖不足</h3>
+          <p>仅在固定时点抽检有限测点，无法捕捉瞬时形变与累积变形，支撑间板件屈曲易漏检。</p>
+          <div class="painpoint-tags">
+            <span>监测频率低</span>
+            <span>盲区多</span>
+            <span>反馈链路长</span>
+          </div>
+        </article>
+        <article class="painpoint-card">
+          <h3>液压调校依赖经验</h3>
+          <p>缺乏形变量与液压杆调整量之间的量化映射，试错式操作易导致过度或不足调校。</p>
+          <div class="painpoint-tags">
+            <span>响应慢</span>
+            <span>效率低</span>
+            <span>风险大</span>
+          </div>
+        </article>
+        <article class="painpoint-card">
+          <h3>缺乏预测性干预</h3>
+          <p>内模力学行为复杂时变，传统手段只能被动记录，难以实现前瞻性的稳定性评估与预防。</p>
+          <div class="painpoint-tags">
+            <span>非线性</span>
+            <span>多物理耦合</span>
+            <span>风险高企</span>
+          </div>
+        </article>
+      </div>
+      <div class="diagram">
+        <h4>图3.1.1 内模关键失稳场景</h4>
+        <div class="beam-failure">
+          <div class="top-sag">顶板下沉</div>
+          <div class="side-bulge">侧墙外鼓</div>
+          <div class="joint-gap">接缝错台</div>
+          <div class="pressure-wave"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="architecture">
+      <header class="panel-header">
+        <h2>3.2 内模形变智能监测与控制系统设计的关键技术</h2>
+        <p>三层架构：多源实时感知、数字孪生认知、智能决策控制。</p>
+      </header>
+      <div class="architecture-tabs">
+        <button class="tab-btn active" data-tab="sensing">高精度感知</button>
+        <button class="tab-btn" data-tab="twin">数字孪生分析</button>
+        <button class="tab-btn" data-tab="algorithm">形变识别算法</button>
+        <button class="tab-btn" data-tab="pid">IMC-PID 控制器</button>
+        <button class="tab-btn" data-tab="strategy">分级调控策略</button>
+      </div>
+      <div class="tab-content active" id="sensing">
+        <div class="content-grid">
+          <div class="content-text">
+            <h3>基于多源数据融合的高精度实时感知技术</h3>
+            <ul>
+              <li>多站式三维激光扫描网络覆盖箱梁内腔，测量精度±1~2mm，扫描速率30万点/秒。</li>
+              <li>固定靶标实现点云自动配准，浇筑阶段1-2分钟一次自动扫描。</li>
+              <li>倾角传感器与激光位移计形成协同测量体系，卡尔曼滤波保证数据鲁棒性。</li>
+            </ul>
+          </div>
+          <div class="content-visual">
+            <div class="lidar-network">
+              <div class="station station-1">站点A</div>
+              <div class="station station-2">站点B</div>
+              <div class="station station-3">站点C</div>
+              <div class="station station-4">站点D</div>
+              <div class="beam-outline"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-content" id="twin">
+        <div class="content-grid">
+          <div class="content-text">
+            <h3>数字孪生形变识别、溯源与预测</h3>
+            <ul>
+              <li>点云噪声过滤、精密配准与分割，实现顶模、侧模、角模的部件级识别。</li>
+              <li>实时点云与BIM基准模型比对，生成毫米级形变场云图。</li>
+              <li>结合有限元模型反演荷载与支撑失效位置，实现从现象到机理的洞察。</li>
+            </ul>
+          </div>
+          <div class="content-visual">
+            <div class="twin-view">
+              <canvas id="heatmap" width="280" height="200" aria-label="形变热力图"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-content" id="algorithm">
+        <div class="content-grid">
+          <div class="content-text">
+            <h3>形变识别与量化算法</h3>
+            <ul>
+              <li>粗配准4PCS + 精配准ICP，保障点云对齐。</li>
+              <li>输出整体重心偏移、扭转角度与局部极值位置。</li>
+              <li>ARIMA/LSTM趋势预测，延时控制在30秒以内。</li>
+            </ul>
+          </div>
+          <div class="content-visual">
+            <div class="metrics">
+              <div class="metric">
+                <span class="metric-label">检测精度</span>
+                <span class="metric-value">≤ 2 mm</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">定位精度</span>
+                <span class="metric-value">≤ 50 mm</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">处理延时</span>
+                <span class="metric-value">&lt; 30 s</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-content" id="pid">
+        <div class="content-grid">
+          <div class="content-text">
+            <h3>内模 IMC-PID 控制器设计</h3>
+            <ul>
+              <li>建立液压杆位移与关键点形变量之间的多输入多输出传递模型。</li>
+              <li>将内模动力学嵌入控制器，实现无差跟踪。</li>
+              <li>自适应整定策略，实时微调PID参数应对混凝土特性变化。</li>
+            </ul>
+          </div>
+          <div class="content-visual">
+            <div class="pid-plot">
+              <canvas id="pidChart" width="280" height="200" aria-label="PID 响应曲线"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-content" id="strategy">
+        <div class="content-grid">
+          <div class="content-text">
+            <h3>形变分级调控决策</h3>
+            <p>基于形变量幅值与发展趋势，自动匹配最优调控策略，兼顾精度与效率。</p>
+            <div class="strategy-switcher">
+              <button class="strategy-btn" data-level="1">一级 · 持续监控</button>
+              <button class="strategy-btn" data-level="2">二级 · 预警微调</button>
+              <button class="strategy-btn" data-level="3">三级 · 主动干预</button>
+              <button class="strategy-btn" data-level="4">四级 · 应急管控</button>
+            </div>
+            <ul id="strategyDetails" class="strategy-details"></ul>
+          </div>
+          <div class="content-visual">
+            <div class="strategy-gauge">
+              <div class="gauge-circle">
+                <div class="gauge-needle" id="gaugeNeedle"></div>
+              </div>
+              <p class="gauge-label">实时形变等级</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="control">
+      <header class="panel-header">
+        <h2>3.2.4-3.2.5 自适应调控策略沙盘</h2>
+        <p>联动液压执行器、PID参数与策略分级，实现从微调到应急的全场景指挥。</p>
+      </header>
+      <div class="control-grid">
+        <div class="card">
+          <h3>PID 参数整定</h3>
+          <div class="pid-config">
+            <label>比例增益 K<sub>p</sub>
+              <input type="range" id="kpRange" min="0.5" max="4" step="0.1" value="1.6" />
+            </label>
+            <label>积分时间 T<sub>i</sub>
+              <input type="range" id="tiRange" min="10" max="120" step="5" value="45" />
+            </label>
+            <label>微分时间 T<sub>d</sub>
+              <input type="range" id="tdRange" min="0" max="30" step="1" value="12" />
+            </label>
+            <div class="pid-values">
+              <div>当前 K<sub>p</sub>：<span id="kpValue">1.6</span></div>
+              <div>当前 T<sub>i</sub>：<span id="tiValue">45</span> s</div>
+              <div>当前 T<sub>d</sub>：<span id="tdValue">12</span> s</div>
+            </div>
+            <p class="pid-note">说明：IMC-PID 将内模模型嵌入控制器，初始参数即可获得稳定控制性能，系统会根据反馈自动微调。</p>
+          </div>
+        </div>
+        <div class="card">
+          <h3>液压执行器群响应</h3>
+          <div class="actuator-grid" id="actuatorGrid"></div>
+          <p class="actuator-note">提示：每个液压支撑对应一个控制回路，指令调整量与目标形变量闭环联动。</p>
+        </div>
+        <div class="card">
+          <h3>策略决策矩阵</h3>
+          <table class="strategy-table">
+            <thead>
+              <tr>
+                <th>形变等级</th>
+                <th>特征描述</th>
+                <th>系统响应策略</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>一级（正常）</td>
+                <td>局部形变 &lt; ±3mm，趋势平稳</td>
+                <td>记录数据，持续监控，无需调整。</td>
+              </tr>
+              <tr>
+                <td>二级（预警）</td>
+                <td>形变量 ±3~5mm 或速度加快</td>
+                <td>声光预警，高亮显示区域，启动微调模式。</td>
+              </tr>
+              <tr>
+                <td>三级（干预）</td>
+                <td>形变量 &gt; ±5mm 或整体偏移趋势</td>
+                <td>严重警报，快速校正，建议调整浇筑节奏。</td>
+              </tr>
+              <tr>
+                <td>四级（应急）</td>
+                <td>形变量 &gt; ±10mm 或预测出现失稳</td>
+                <td>锁定状态，建议停止浇筑并执行应急预案。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="dashboard">
+      <header class="panel-header">
+        <h2>3.2-3.3 实时监测与施工阶段应用面板</h2>
+        <p>多维可视化呈现点云刷新、传感网络、调控反馈与施工流程。</p>
+      </header>
+      <div class="dashboard-grid">
+        <div class="card wide">
+          <h3>内腔形态三维映射</h3>
+          <div class="twin-render">
+            <canvas id="twinCanvas" width="380" height="230" aria-label="内模三维映射"></canvas>
+            <div class="legend">
+              <span><i class="legend-dot low"></i>偏差 ≤ 3mm</span>
+              <span><i class="legend-dot mid"></i>偏差 3-5mm</span>
+              <span><i class="legend-dot high"></i>偏差 ≥ 5mm</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>传感网络状态</h3>
+          <ul class="sensor-list" id="sensorList"></ul>
+        </div>
+        <div class="card">
+          <h3>控制周期计时</h3>
+          <div class="cycle">
+            <div class="cycle-bar"><div class="cycle-progress" id="cycleProgress"></div></div>
+            <p>当前阶段：<span id="cycleStage">数据采集</span></p>
+            <p>周期剩余：<span id="cycleCountdown">60</span> 秒</p>
+          </div>
+        </div>
+        <div class="card">
+          <h3>报警记录</h3>
+          <ul class="alert-list" id="alertList"></ul>
+        </div>
+        <div class="card">
+          <h3>液压调校响应</h3>
+          <div class="hydraulic">
+            <div class="hydraulic-bar"><div class="hydraulic-level" id="hydraulicLevel"></div></div>
+            <p>平均位移指令：<span id="hydraulicDisplacement">0.0</span> mm</p>
+            <p>执行效率：<span id="hydraulicEfficiency">98%</span></p>
+          </div>
+        </div>
+        <div class="card">
+          <h3>运维计划</h3>
+          <ol class="maintenance">
+            <li>每日：扫描仪光学镜头清洁、传感器状态巡检。</li>
+            <li>每周：倾角与位移传感器精度校验。</li>
+            <li>每月：液压系统维护与动作精度复核。</li>
+            <li>数据：点云保留30天，形变数据一年，报警永久存档。</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="deployment">
+      <header class="panel-header">
+        <h2>3.3 施工阶段部署与操作流程</h2>
+        <p>硬件部署、软件集成、运行流程、人员培训与应急预案一站式展现。</p>
+      </header>
+      <div class="deployment-timeline">
+        <div class="timeline-step">
+          <div class="step-header">
+            <span class="step-index">01</span>
+            <h3>系统部署与集成</h3>
+          </div>
+          <p>4个激光扫描站点 + 12个倾角传感器 + 8个位移传感器，工业以太网10Hz采样。</p>
+          <p>软件架构包含数据采集、点云处理、形变分析、控制决策四大模块。</p>
+        </div>
+        <div class="timeline-step">
+          <div class="step-header">
+            <span class="step-index">02</span>
+            <h3>运行流程</h3>
+          </div>
+          <p>浇筑前15分钟完成自检：传感连通性、扫描标定、液压动作确认。</p>
+          <p>每个控制周期 60 秒：采集 10s → 处理 25s → 决策 10s → 执行 15s。</p>
+        </div>
+        <div class="timeline-step">
+          <div class="step-header">
+            <span class="step-index">03</span>
+            <h3>维护与数据管理</h3>
+          </div>
+          <p>建立设备档案，记录维护内容与问题；自动生成日报、周报、月报并推送。</p>
+          <p>采用分级存储策略确保数据可追溯，为质量分析与工艺优化提供支撑。</p>
+        </div>
+        <div class="timeline-step">
+          <div class="step-header">
+            <span class="step-index">04</span>
+            <h3>人员培训与应急预案</h3>
+          </div>
+          <p>40 学时培训覆盖原理、操作、诊断；故障时切换人工监测，网络中断自动本地存储。</p>
+          <p>重大形变警报下，现场技术人员可立即暂停浇筑，确保安全。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="outcome">
+      <header class="panel-header">
+        <h2>3.4-3.5 应用效果分析与总结</h2>
+        <p>质量、效率、经济与推广价值全面量化呈现，展望未来发展方向。</p>
+      </header>
+      <div class="outcome-grid">
+        <div class="card">
+          <h3>质量控制效果</h3>
+          <div class="progress-group">
+            <div class="progress-item">
+              <span>内腔尺寸合格率</span>
+              <div class="progress-bar"><div class="progress-fill" style="width:99.8%"></div></div>
+              <strong>99.8%</strong>
+            </div>
+            <div class="progress-item">
+              <span>顶板厚度偏差</span>
+              <div class="progress-bar"><div class="progress-fill" style="width:85%"></div></div>
+              <strong>+2.1/-1.8 mm</strong>
+            </div>
+            <div class="progress-item">
+              <span>接缝错台最大值</span>
+              <div class="progress-bar"><div class="progress-fill" style="width:42%"></div></div>
+              <strong>2.1 mm</strong>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>效率与经济效益</h3>
+          <ul class="effect-list">
+            <li>监测人员由 4 人缩减至 1 人，监测时长从 3 小时降至 1 小时。</li>
+            <li>箱梁预制周期从 5 天/片缩短至 4 天/片，效率提升 25%。</li>
+            <li>系统总投资 152 万元，年度维护 15 万元，投资回收期 1.2 年。</li>
+            <li>年度直接经济效益 234 万元，返工率由 5.3% 降至 0.2%。</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>技术推广价值</h3>
+          <p>多源数据融合、数字孪生预测、自适应控制三大创新突破推动行业智能化升级。</p>
+          <p>形成设备选型指南、操作规范、维护标准等完整技术体系，成果纳入行业标准。</p>
+          <p>数据资产支撑混凝土浇筑行为研究，为交通基础设施品质提升提供新路径。</p>
+        </div>
+        <div class="card">
+          <h3>未来展望</h3>
+          <ul class="effect-list">
+            <li>引入 5G 与边缘计算，提升响应速度与算力。</li>
+            <li>拓展数字孪生深度，实现全过程质量预测。</li>
+            <li>与BIM、智慧工地平台深度融合，构建全生命周期管理。</li>
+            <li>增强极端工况适应性，强化系统可靠性。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>箱梁内模形变智能监测与自适应控制系统 · 演示平台</p>
+    <div class="footer-actions">
+      <button class="ghost-btn" data-target="#painpoints">回到顶部</button>
+      <button class="primary-btn" data-target="#outcome">查看成效</button>
+    </div>
+  </footer>
+
+  <div class="tour-overlay" id="tourOverlay" hidden>
+    <div class="tour-dialog">
+      <h3>演示导览</h3>
+      <p id="tourText">欢迎进入控制中心演示，请按照引导逐步体验核心功能。</p>
+      <div class="tour-actions">
+        <button class="ghost-btn" id="tourSkip">跳过</button>
+        <button class="primary-btn" id="tourNext">下一步</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
