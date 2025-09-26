@@ -4,23 +4,118 @@ let alertsData = [];
 let chartInstances = {};
 let updateIntervals = {};
 
+// Chart.js全局配置
+if (typeof Chart !== 'undefined') {
+  Chart.defaults.responsive = true;
+  Chart.defaults.maintainAspectRatio = false;
+  Chart.defaults.resizeDelay = 0;
+  Chart.defaults.devicePixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+}
+
+// 图表尺寸控制函数
+function constrainChartSize(chart) {
+  if (!chart || !chart.canvas) return;
+  
+  const container = chart.canvas.parentElement;
+  if (!container) return;
+  
+  const maxWidth = container.clientWidth;
+  const maxHeight = container.clientHeight;
+  
+  if (maxWidth > 0 && maxHeight > 0) {
+    chart.resize(maxWidth, maxHeight);
+  }
+}
+
 // DOM加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
-  initializeApp();
+  showLoadingScreen();
 });
+
+// 显示加载屏幕
+function showLoadingScreen() {
+  const loadingScreen = document.getElementById('loadingScreen');
+  const loadingProgress = document.getElementById('loadingProgress');
+  const loadingStatus = document.getElementById('loadingStatus');
+  
+  const loadingSteps = [
+    { progress: 20, status: '初始化系统组件...' },
+    { progress: 40, status: '连接数据源...' },
+    { progress: 60, status: '加载传感器配置...' },
+    { progress: 80, status: '初始化图表引擎...' },
+    { progress: 100, status: '系统就绪！' }
+  ];
+  
+  let currentStep = 0;
+  
+  function updateLoading() {
+    if (currentStep < loadingSteps.length) {
+      const step = loadingSteps[currentStep];
+      loadingProgress.style.width = step.progress + '%';
+      loadingStatus.textContent = step.status;
+      currentStep++;
+      
+      setTimeout(updateLoading, 800 + Math.random() * 400);
+    } else {
+      setTimeout(() => {
+        loadingScreen.classList.add('hidden');
+        setTimeout(() => {
+          loadingScreen.style.display = 'none';
+          initializeApp();
+        }, 500);
+      }, 1000);
+    }
+  }
+  
+  setTimeout(updateLoading, 500);
+}
 
 // 应用初始化
 function initializeApp() {
+  console.log('开始初始化应用...');
+  console.log('Chart.js可用性:', typeof Chart !== 'undefined');
+  
+  initializeParticles();
   initializeNavigation();
   initializeTimeDisplay();
   initializeFakeData();
-  initializeDashboard();
+  
+  // 延迟初始化仪表盘，确保DOM完全加载
+  setTimeout(() => {
+    console.log('初始化仪表盘...');
+    initializeDashboard();
+  }, 100);
+  
   initializeMonitoring();
   initializeSensors();
   initializeControl();
   initializeAnalysis();
   initializeSettings();
+  initializeChartActions(); // 初始化图表操作按钮
   startDataUpdates();
+}
+
+// 初始化粒子背景
+function initializeParticles() {
+  const particlesContainer = document.getElementById('particles');
+  const particleCount = 30;
+  
+  for (let i = 0; i < particleCount; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'particle';
+    
+    const size = Math.random() * 4 + 2;
+    particle.style.cssText = `
+      width: ${size}px;
+      height: ${size}px;
+      left: ${Math.random() * 100}%;
+      top: ${Math.random() * 100}%;
+      animation-delay: ${Math.random() * 6}s;
+      animation-duration: ${6 + Math.random() * 4}s;
+    `;
+    
+    particlesContainer.appendChild(particle);
+  }
 }
 
 // 导航功能初始化
@@ -36,11 +131,23 @@ function initializeNavigation() {
       navItems.forEach(nav => nav.classList.remove('active'));
       item.classList.add('active');
       
-      // 切换视图
+      // 切换视图动画
       views.forEach(view => {
-        view.classList.remove('active');
+        if (view.classList.contains('active')) {
+          view.style.animation = 'fadeOut 0.2s ease-out';
+          setTimeout(() => {
+            view.classList.remove('active');
+            view.style.animation = '';
+          }, 200);
+        }
         if (view.id === targetView) {
-          view.classList.add('active');
+          setTimeout(() => {
+            view.classList.add('active');
+            view.style.animation = 'fadeIn 0.3s ease-in';
+            setTimeout(() => {
+              view.style.animation = '';
+            }, 300);
+          }, 200);
         }
       });
       
@@ -90,11 +197,15 @@ function initializeTimeDisplay() {
 
 // 假数据初始化
 function initializeFakeData() {
+  console.log('开始生成假数据...');
+  
   // 初始化传感器数据
   sensorData = generateSensorData();
+  console.log('生成传感器数据:', sensorData.length, '条');
   
   // 初始化告警数据
   alertsData = generateAlertsData();
+  console.log('生成告警数据:', alertsData.length, '条');
 }
 
 // 生成传感器数据
@@ -169,10 +280,29 @@ function generateRandomValue(min, max, decimals = 2) {
 
 // 仪表板初始化
 function initializeDashboard() {
+  console.log('初始化仪表盘...');
+  
+  // 检查必要的DOM元素
+  const requiredElements = ['totalSensors', 'activeAlerts', 'deviceOnlineRate', 'dataIntegrity', 'trendChart', 'deviceList', 'alertsList'];
+  const missingElements = [];
+  
+  requiredElements.forEach(id => {
+    const element = document.getElementById(id);
+    if (!element) {
+      missingElements.push(id);
+    }
+  });
+  
+  if (missingElements.length > 0) {
+    console.error('缺少DOM元素:', missingElements);
+  }
+  
   updateMetricCards();
   initializeTrendChart();
   updateDeviceList();
   updateAlertsList();
+  updateSystemStatus();
+  updateQuickStats();
 }
 
 // 更新指标卡片
@@ -182,94 +312,149 @@ function updateMetricCards() {
   const activeAlerts = alertsData.filter(a => !a.acknowledged && a.level !== 'info').length;
   const onlineRate = ((onlineSensors / totalSensors) * 100).toFixed(1);
   
-  document.getElementById('totalSensors').textContent = totalSensors;
-  document.getElementById('activeAlerts').textContent = activeAlerts;
-  document.getElementById('deviceOnlineRate').textContent = `${onlineRate}%`;
-  document.getElementById('dataIntegrity').textContent = '99.7%';
+  animateNumberUpdate('totalSensors', totalSensors);
+  animateNumberUpdate('activeAlerts', activeAlerts);
+  animateNumberUpdate('deviceOnlineRate', `${onlineRate}%`);
+  animateNumberUpdate('dataIntegrity', '99.7%');
+}
+
+// 数值更新动画
+function animateNumberUpdate(elementId, newValue) {
+  const element = document.getElementById(elementId);
+  if (!element || element.textContent === newValue.toString()) return;
+  
+  element.classList.add('number-jump');
+  element.classList.add('data-update');
+  
+  setTimeout(() => {
+    element.textContent = newValue;
+  }, 200);
+  
+  setTimeout(() => {
+    element.classList.remove('number-jump');
+    element.classList.remove('data-update');
+  }, 600);
 }
 
 // 初始化趋势图表
 function initializeTrendChart() {
   const ctx = document.getElementById('trendChart');
-  if (!ctx) return;
-  
-  const hours = [];
-  const displacementData = [];
-  const strainData = [];
-  
-  for (let i = 23; i >= 0; i--) {
-    const hour = new Date(Date.now() - i * 3600000);
-    hours.push(hour.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }));
-    displacementData.push(generateRandomValue(1, 8, 1));
-    strainData.push(generateRandomValue(50, 300, 0));
+  if (!ctx) {
+    console.error('找不到trendChart元素');
+    return;
   }
   
-  if (chartInstances.trendChart) {
-    chartInstances.trendChart.destroy();
+  if (typeof Chart === 'undefined') {
+    console.error('Chart.js未加载，显示fallback内容...');
+    const chartContainer = ctx.parentElement;
+    chartContainer.innerHTML = `
+      <div class="chart-fallback">
+        <i class="fas fa-chart-line"></i>
+        <p>图表组件加载中...</p>
+        <small>如持续显示此信息，请检查网络连接</small>
+      </div>
+    `;
+    setTimeout(initializeTrendChart, 2000);
+    return;
   }
   
-  chartInstances.trendChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: hours,
-      datasets: [
-        {
-          label: '位移 (mm)',
-          data: displacementData,
-          borderColor: '#3182ce',
-          backgroundColor: 'rgba(49, 130, 206, 0.1)',
-          tension: 0.4,
-          yAxisID: 'y'
-        },
-        {
-          label: '应变 (με)',
-          data: strainData,
-          borderColor: '#ed8936',
-          backgroundColor: 'rgba(237, 137, 54, 0.1)',
-          tension: 0.4,
-          yAxisID: 'y1'
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        y: {
-          type: 'linear',
-          display: true,
-          position: 'left',
-          title: {
-            display: true,
-            text: '位移 (mm)'
-          }
-        },
-        y1: {
-          type: 'linear',
-          display: true,
-          position: 'right',
-          title: {
-            display: true,
-            text: '应变 (με)'
+  // 显示加载状态
+  const chartContainer = ctx.parentElement;
+  chartContainer.innerHTML = '<div class="chart-loading"><div class="loading"></div><p>加载图表数据...</p></div>';
+  
+  setTimeout(() => {
+    // 恢复canvas元素
+    chartContainer.innerHTML = '<div class="chart-wrapper"><canvas id="trendChart"></canvas></div>';
+    const newCtx = document.getElementById('trendChart');
+    
+    const hours = [];
+    const displacementData = [];
+    const strainData = [];
+    
+    for (let i = 23; i >= 0; i--) {
+      const hour = new Date(Date.now() - i * 3600000);
+      hours.push(hour.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }));
+      displacementData.push(generateRandomValue(1, 8, 1));
+      strainData.push(generateRandomValue(50, 300, 0));
+    }
+    
+    if (chartInstances.trendChart) {
+      chartInstances.trendChart.destroy();
+    }
+  
+    chartInstances.trendChart = new Chart(newCtx, {
+      type: 'line',
+      data: {
+        labels: hours,
+        datasets: [
+          {
+            label: '位移 (mm)',
+            data: displacementData,
+            borderColor: '#3182ce',
+            backgroundColor: 'rgba(49, 130, 206, 0.1)',
+            tension: 0.4,
+            yAxisID: 'y'
           },
-          grid: {
-            drawOnChartArea: false,
+          {
+            label: '应变 (με)',
+            data: strainData,
+            borderColor: '#ed8936',
+            backgroundColor: 'rgba(237, 137, 54, 0.1)',
+            tension: 0.4,
+            yAxisID: 'y1'
           }
-        }
+        ]
       },
-      plugins: {
-        legend: {
-          position: 'top'
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 2000,
+          easing: 'easeInOutQuart'
+        },
+        scales: {
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            title: {
+              display: true,
+              text: '位移 (mm)'
+            }
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            title: {
+              display: true,
+              text: '应变 (με)'
+            },
+            grid: {
+              drawOnChartArea: false,
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'top'
+          }
         }
       }
-    }
-  });
+    });
+    
+    // 约束图表尺寸
+    constrainChartSize(chartInstances.trendChart);
+  }, 1500);
 }
 
 // 更新设备列表
 function updateDeviceList() {
   const deviceList = document.getElementById('deviceList');
-  if (!deviceList) return;
+  if (!deviceList) {
+    console.error('找不到deviceList元素');
+    return;
+  }
   
   const criticalSensors = sensorData.filter(s => s.status === 'critical').slice(0, 8);
   const warningSensors = sensorData.filter(s => s.status === 'warning').slice(0, 5);
@@ -277,10 +462,20 @@ function updateDeviceList() {
   
   const displaySensors = [...criticalSensors, ...warningSensors, ...normalSensors].slice(0, 15);
   
-  deviceList.innerHTML = displaySensors.map(sensor => `
-    <div class="device-item">
+  if (displaySensors.length === 0) {
+    deviceList.innerHTML = `
+      <div class="no-data">
+        <i class="fas fa-info-circle"></i>
+        <p>暂无设备数据</p>
+      </div>
+    `;
+    return;
+  }
+  
+  deviceList.innerHTML = displaySensors.map((sensor, index) => `
+    <div class="device-item slide-in" style="animation-delay: ${index * 50}ms">
       <div class="device-info">
-        <div class="device-status-dot ${sensor.status}"></div>
+        <div class="device-status-dot ${sensor.status} ${sensor.status === 'critical' ? 'status-blink' : ''}"></div>
         <div>
           <div class="device-name">${sensor.name}</div>
           <div class="device-location">${sensor.position}</div>
@@ -289,22 +484,219 @@ function updateDeviceList() {
       <div class="device-value">${sensor.value} ${sensor.unit}</div>
     </div>
   `).join('');
+  
+  // 添加点击波纹效果
+  setTimeout(() => {
+    const deviceItems = deviceList.querySelectorAll('.device-item');
+    deviceItems.forEach(item => {
+      item.addEventListener('click', function(e) {
+        createRippleEffect(e, this);
+      });
+    });
+  }, 100);
+}
+
+// 创建波纹效果
+function createRippleEffect(event, element) {
+  const ripple = document.createElement('span');
+  const rect = element.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height);
+  const x = event.clientX - rect.left - size / 2;
+  const y = event.clientY - rect.top - size / 2;
+  
+  ripple.style.cssText = `
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(49, 130, 206, 0.3);
+    transform: scale(0);
+    animation: ripple 0.6s linear;
+    left: ${x}px;
+    top: ${y}px;
+    width: ${size}px;
+    height: ${size}px;
+    pointer-events: none;
+  `;
+  
+  element.style.position = 'relative';
+  element.style.overflow = 'hidden';
+  element.appendChild(ripple);
+  
+  setTimeout(() => {
+    ripple.remove();
+  }, 600);
 }
 
 // 更新告警列表
 function updateAlertsList() {
   const alertsList = document.getElementById('alertsList');
-  if (!alertsList) return;
+  if (!alertsList) {
+    console.error('找不到alertsList元素');
+    return;
+  }
   
   const recentAlerts = alertsData.slice(0, 10);
   
-  alertsList.innerHTML = recentAlerts.map(alert => `
-    <div class="alert-item">
-      <div class="alert-level ${alert.level}">${alert.level}</div>
+  if (recentAlerts.length === 0) {
+    alertsList.innerHTML = `
+      <div class="no-data">
+        <i class="fas fa-check-circle"></i>
+        <p>暂无告警信息</p>
+      </div>
+    `;
+    return;
+  }
+  
+  alertsList.innerHTML = recentAlerts.map((alert, index) => `
+    <div class="alert-item bounce-in" style="animation-delay: ${index * 100}ms">
+      <div class="alert-level ${alert.level} ${alert.level === 'critical' ? 'pulse' : ''}">${alert.level}</div>
       <div class="alert-message">${alert.message}</div>
       <div class="alert-time">${alert.time.toLocaleTimeString('zh-CN')}</div>
     </div>
   `).join('');
+}
+
+// 更新系统状态
+function updateSystemStatus() {
+  console.log('更新系统状态...');
+  
+  // 模拟系统状态数据
+  const serverStatus = '在线';
+  const databaseStatus = '正常';
+  const networkLatency = Math.floor(Math.random() * 50) + 100;
+  const memoryUsage = Math.floor(Math.random() * 30) + 60;
+  
+  // 确保状态网格存在，如果不存在则创建
+  const statusGrid = document.querySelector('.status-grid');
+  if (statusGrid) {
+    statusGrid.innerHTML = `
+      <div class="status-item fade-in" style="animation-delay: 0ms">
+        <div class="status-icon">
+          <i class="fas fa-server text-blue"></i>
+        </div>
+        <div class="status-info">
+          <div class="status-label">服务器</div>
+          <div class="status-value">${serverStatus}</div>
+        </div>
+      </div>
+      <div class="status-item fade-in" style="animation-delay: 100ms">
+        <div class="status-icon">
+          <i class="fas fa-database text-green"></i>
+        </div>
+        <div class="status-info">
+          <div class="status-label">数据库</div>
+          <div class="status-value">${databaseStatus}</div>
+        </div>
+      </div>
+      <div class="status-item fade-in" style="animation-delay: 200ms">
+        <div class="status-icon">
+          <i class="fas fa-wifi text-orange"></i>
+        </div>
+        <div class="status-info">
+          <div class="status-label">网络</div>
+          <div class="status-value">${networkLatency}ms</div>
+        </div>
+      </div>
+      <div class="status-item fade-in" style="animation-delay: 300ms">
+        <div class="status-icon">
+          <i class="fas fa-memory text-purple"></i>
+        </div>
+        <div class="status-info">
+          <div class="status-label">内存</div>
+          <div class="status-value">${memoryUsage}%</div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// 更新快速统计
+function updateQuickStats() {
+  const avgDisplacementElement = document.getElementById('avgDisplacement');
+  const maxStrainElement = document.getElementById('maxStrain');
+  const lastUpdateElement = document.getElementById('lastUpdate');
+  
+  if (avgDisplacementElement && sensorData.length > 0) {
+    const displacementSensors = sensorData.filter(s => s.type === 'displacement');
+    const avgDisplacement = displacementSensors.reduce((sum, s) => sum + s.value, 0) / displacementSensors.length;
+    avgDisplacementElement.textContent = `${avgDisplacement.toFixed(1)}mm`;
+  }
+  
+  if (maxStrainElement && sensorData.length > 0) {
+    const strainSensors = sensorData.filter(s => s.type === 'strain');
+    const maxStrain = Math.max(...strainSensors.map(s => s.value));
+    maxStrainElement.textContent = `${maxStrain.toFixed(0)}με`;
+  }
+  
+  if (lastUpdateElement) {
+    lastUpdateElement.textContent = '刚刚';
+  }
+  
+  // 添加数值更新动画
+  [avgDisplacementElement, maxStrainElement, lastUpdateElement].forEach(element => {
+    if (element) {
+      element.classList.add('value-update');
+      setTimeout(() => element.classList.remove('value-update'), 500);
+    }
+  });
+}
+
+// 初始化图表操作按钮
+function initializeChartActions() {
+  const actionButtons = document.querySelectorAll('.action-btn');
+  
+  actionButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      // 添加点击动画
+      this.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        this.style.transform = 'scale(1)';
+      }, 150);
+      
+      const icon = this.querySelector('i');
+      const text = this.querySelector('span').textContent;
+      
+      // 根据按钮类型执行相应操作
+      if (text.includes('导出')) {
+        showNotification('数据导出功能已启动', 'success');
+      } else if (text.includes('打印')) {
+        showNotification('正在生成打印报告...', 'info');
+      } else if (text.includes('分享')) {
+        showNotification('分享链接已复制到剪贴板', 'success');
+      }
+    });
+    
+    // 添加鼠标悬停效果
+    button.addEventListener('mouseenter', function() {
+      this.style.transform = 'translateY(-2px)';
+    });
+    
+    button.addEventListener('mouseleave', function() {
+      this.style.transform = 'translateY(0)';
+    });
+  });
+}
+
+// 显示通知
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `notification notification-${type}`;
+  notification.innerHTML = `
+    <div class="notification-content">
+      <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+      <span>${message}</span>
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // 显示动画
+  setTimeout(() => notification.classList.add('show'), 100);
+  
+  // 自动隐藏
+  setTimeout(() => {
+    notification.classList.remove('show');
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
 }
 
 // 监测视图初始化
@@ -355,14 +747,14 @@ function updateSensorGrid() {
   
   const recentSensors = sensorData.slice(0, 12);
   
-  sensorGrid.innerHTML = recentSensors.map(sensor => `
-    <div class="sensor-card">
+  sensorGrid.innerHTML = recentSensors.map((sensor, index) => `
+    <div class="sensor-card hover-lift scale-in" style="animation-delay: ${index * 50}ms">
       <div class="sensor-header">
         <div>
           <div class="sensor-name">${sensor.name}</div>
           <div class="sensor-type">${sensor.position}</div>
         </div>
-        <div class="device-status-dot ${sensor.status}"></div>
+        <div class="device-status-dot ${sensor.status} ${sensor.status === 'critical' ? 'pulse' : ''}"></div>
       </div>
       <div class="sensor-value">
         ${sensor.value}<span class="sensor-unit">${sensor.unit}</span>
@@ -549,11 +941,16 @@ function updateCylinderGrid() {
     position: generateRandomValue(10, 90, 1)
   }));
   
-  cylinderGrid.innerHTML = cylinders.map(cylinder => `
-    <div class="cylinder-control">
+  cylinderGrid.innerHTML = cylinders.map((cylinder, index) => `
+    <div class="cylinder-control scale-in" style="animation-delay: ${index * 100}ms">
       <div style="font-weight: 500; margin-bottom: 8px;">${cylinder.id}</div>
-      <div style="font-size: 12px; margin-bottom: 4px;">压力: ${cylinder.pressure} bar</div>
-      <div style="font-size: 12px;">位置: ${cylinder.position}%</div>
+      <div style="font-size: 12px; margin-bottom: 8px;">压力: ${cylinder.pressure} bar</div>
+      <div style="font-size: 12px; margin-bottom: 8px;">位置: ${cylinder.position}%</div>
+      <div class="cylinder-visual">
+        <div class="cylinder-body">
+          <div class="cylinder-piston" style="height: ${cylinder.position}%"></div>
+        </div>
+      </div>
     </div>
   `).join('');
 }
@@ -607,13 +1004,22 @@ function initializeAnalysisCharts() {
 // 初始化位移图表
 function initializeDisplacementChart() {
   const ctx = document.getElementById('displacementChart');
-  if (!ctx) return;
+  if (!ctx) {
+    console.error('找不到displacementChart元素');
+    return;
+  }
+  
+  if (typeof Chart === 'undefined') {
+    console.error('Chart.js未加载，延迟重试...');
+    setTimeout(initializeDisplacementChart, 1000);
+    return;
+  }
   
   const days = [];
   const avgDisplacement = [];
   const maxDisplacement = [];
   
-  for (let i = 6; i >= 0; i--) {
+  for (let i = 13; i >= 0; i--) { // 增加数据点
     const date = new Date(Date.now() - i * 86400000);
     days.push(date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }));
     avgDisplacement.push(generateRandomValue(2, 5, 1));
@@ -625,45 +1031,70 @@ function initializeDisplacementChart() {
   }
   
   chartInstances.displacementChart = new Chart(ctx, {
-    type: 'bar',
+    type: 'line', // 改为线图更适合趋势分析
     data: {
       labels: days,
       datasets: [
         {
           label: '平均位移',
           data: avgDisplacement,
-          backgroundColor: 'rgba(49, 130, 206, 0.8)',
           borderColor: '#3182ce',
-          borderWidth: 1
+          backgroundColor: 'rgba(49, 130, 206, 0.1)',
+          borderWidth: 2,
+          tension: 0.4,
+          fill: true
         },
         {
           label: '最大位移',
           data: maxDisplacement,
-          backgroundColor: 'rgba(237, 137, 54, 0.8)',
           borderColor: '#ed8936',
-          borderWidth: 1
+          backgroundColor: 'rgba(237, 137, 54, 0.1)',
+          borderWidth: 2,
+          tension: 0.4,
+          fill: true
         }
       ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      resizeDelay: 0,
+      resizeDelay: 0,
+      animation: {
+        duration: 2000,
+        easing: 'easeInOutQuart'
+      },
       scales: {
         y: {
           beginAtZero: true,
           title: {
             display: true,
             text: '位移 (mm)'
+          },
+          grid: {
+            color: 'rgba(0, 0, 0, 0.1)'
+          }
+        },
+        x: {
+          grid: {
+            color: 'rgba(0, 0, 0, 0.1)'
           }
         }
       },
       plugins: {
         legend: {
-          position: 'top'
+          position: 'top',
+          labels: {
+            usePointStyle: true,
+            padding: 20
+          }
         }
       }
     }
   });
+  
+  // 约束图表尺寸
+  constrainChartSize(chartInstances.displacementChart);
 }
 
 // 初始化告警统计图表
@@ -697,6 +1128,7 @@ function initializeAlertsChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      resizeDelay: 0,
       plugins: {
         legend: {
           position: 'bottom'
@@ -704,6 +1136,9 @@ function initializeAlertsChart() {
       }
     }
   });
+  
+  // 约束图表尺寸
+  constrainChartSize(chartInstances.alertsChart);
 }
 
 // 更新分析摘要
@@ -790,6 +1225,23 @@ function showSensorModal(sensorId) {
   const modal = document.getElementById('sensorModal');
   const modalBody = document.getElementById('sensorModalBody');
   
+  // 模态框动画
+  modal.style.display = 'flex';
+  modal.style.opacity = '0';
+  
+  setTimeout(() => {
+    modal.style.transition = 'opacity 0.3s ease';
+    modal.style.opacity = '1';
+  }, 10);
+  
+  const modalContent = modal.querySelector('.modal-content');
+  modalContent.style.transform = 'scale(0.7) translateY(-50px)';
+  modalContent.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+  
+  setTimeout(() => {
+    modalContent.style.transform = 'scale(1) translateY(0)';
+  }, 10);
+  
   modalBody.innerHTML = `
     <div class="sensor-detail">
       <h4>${sensor.name} (${sensor.id})</h4>
@@ -846,7 +1298,11 @@ function initializeSensorHistoryChart(sensor) {
     values.push(generateRandomValue(baseValue - variation, baseValue + variation, 2));
   }
   
-  new Chart(ctx, {
+  if (chartInstances.sensorHistoryChart) {
+    chartInstances.sensorHistoryChart.destroy();
+  }
+  
+  chartInstances.sensorHistoryChart = new Chart(ctx, {
     type: 'line',
     data: {
       labels: hours,
@@ -871,13 +1327,29 @@ function initializeSensorHistoryChart(sensor) {
       }
     }
   });
+  
+  // 约束图表尺寸
+  constrainChartSize(chartInstances.sensorHistoryChart);
 }
 
 // 关闭模态框
 document.addEventListener('click', (e) => {
   if (e.target.classList.contains('modal-close') || e.target.classList.contains('modal')) {
-    const modals = document.querySelectorAll('.modal');
-    modals.forEach(modal => modal.classList.remove('active'));
+    const modal = e.target.closest('.modal') || e.target;
+    if (modal.classList.contains('modal')) {
+      const modalContent = modal.querySelector('.modal-content');
+      
+      // 关闭动画
+      modalContent.style.transform = 'scale(0.7) translateY(-50px)';
+      modal.style.opacity = '0';
+      
+      setTimeout(() => {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+        modalContent.style.transform = '';
+        modal.style.opacity = '';
+      }, 300);
+    }
   }
 });
 
@@ -975,7 +1447,9 @@ function updateCurrentView() {
 function updateDashboard() {
   updateMetricCards();
   updateDeviceList();
+  updateQuickStats();
   updateAlertsList();
+  updateSystemStatus(); // 确保系统状态也会更新
 }
 
 // 更新监测视图
@@ -1015,13 +1489,68 @@ function updateAnalysisCharts() {
 // 刷新设备按钮功能
 document.addEventListener('click', (e) => {
   if (e.target.id === 'refreshDevices' || e.target.parentElement.id === 'refreshDevices') {
-    e.target.classList.add('loading');
+    const button = e.target.closest('button');
+    const icon = button.querySelector('i');
+    
+    // 添加旋转动画
+    if (icon) {
+      icon.classList.add('rotate');
+    }
+    button.classList.add('loading');
+    
+    // 添加按钮点击效果
+    button.style.transform = 'scale(0.95)';
+    
     setTimeout(() => {
       updateDeviceList();
-      e.target.classList.remove('loading');
+      if (icon) {
+        icon.classList.remove('rotate');
+      }
+      button.classList.remove('loading');
+      button.style.transform = '';
+      
+      // 显示成功动画
+      showNotification('设备列表已刷新', 'success');
     }, 1000);
   }
 });
+
+// 显示通知动画
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `notification ${type} slide-in`;
+  notification.innerHTML = `
+    <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : 'info'}"></i>
+    <span>${message}</span>
+  `;
+  
+  // 添加样式
+  notification.style.cssText = `
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    background: ${type === 'success' ? '#48bb78' : type === 'error' ? '#f56565' : '#3182ce'};
+    color: white;
+    padding: 12px 16px;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // 自动消失
+  setTimeout(() => {
+    notification.style.animation = 'slideOut 0.3s ease-in';
+    setTimeout(() => {
+      notification.remove();
+    }, 300);
+  }, 3000);
+}
 
 // 导出功能模拟
 document.addEventListener('click', (e) => {

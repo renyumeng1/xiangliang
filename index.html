@@ -11,7 +11,25 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <!-- 加载屏幕 -->
+  <div id="loadingScreen" class="loading-screen">
+    <div class="loading-content">
+      <div class="loading-logo">
+        <i class="fas fa-cube"></i>
+      </div>
+      <h2>箱梁监控系统</h2>
+      <p>正在初始化系统...</p>
+      <div class="loading-bar">
+        <div class="loading-progress" id="loadingProgress"></div>
+      </div>
+      <div class="loading-status" id="loadingStatus">加载中...</div>
+    </div>
+  </div>
+
   <div class="app-container">
+    <!-- 粒子背景 -->
+    <div class="particles" id="particles"></div>
+    
     <!-- 顶部导航栏 -->
     <header class="top-navbar">
       <div class="navbar-left">
@@ -103,6 +121,55 @@
             </div>
           </div>
 
+          <!-- 系统状态面板 -->
+          <div class="system-status-panel">
+            <div class="panel-header">
+              <h3>系统状态</h3>
+              <div class="system-indicator">
+                <span class="status-dot online"></span>
+                <span>运行正常</span>
+              </div>
+            </div>
+            <div class="status-grid">
+              <div class="status-item">
+                <div class="status-icon">
+                  <i class="fas fa-server text-blue"></i>
+                </div>
+                <div class="status-info">
+                  <div class="status-label">服务器</div>
+                  <div class="status-value">在线</div>
+                </div>
+              </div>
+              <div class="status-item">
+                <div class="status-icon">
+                  <i class="fas fa-database text-green"></i>
+                </div>
+                <div class="status-info">
+                  <div class="status-label">数据库</div>
+                  <div class="status-value">正常</div>
+                </div>
+              </div>
+              <div class="status-item">
+                <div class="status-icon">
+                  <i class="fas fa-wifi text-orange"></i>
+                </div>
+                <div class="status-info">
+                  <div class="status-label">网络</div>
+                  <div class="status-value">126ms</div>
+                </div>
+              </div>
+              <div class="status-item">
+                <div class="status-icon">
+                  <i class="fas fa-memory text-purple"></i>
+                </div>
+                <div class="status-info">
+                  <div class="status-label">内存</div>
+                  <div class="status-value">68%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- 实时数据图表 -->
           <div class="chart-container">
             <div class="chart-header">
@@ -117,7 +184,41 @@
               </div>
             </div>
             <div class="chart-content">
-              <canvas id="trendChart" width="800" height="300"></canvas>
+              <div class="chart-wrapper">
+                <canvas id="trendChart"></canvas>
+              </div>
+            </div>
+            
+            <!-- 图表下方的快速操作区域 -->
+            <div class="chart-actions">
+              <div class="action-buttons">
+                <button class="action-btn">
+                  <i class="fas fa-download"></i>
+                  <span>导出数据</span>
+                </button>
+                <button class="action-btn">
+                  <i class="fas fa-print"></i>
+                  <span>打印报告</span>
+                </button>
+                <button class="action-btn">
+                  <i class="fas fa-share"></i>
+                  <span>分享</span>
+                </button>
+              </div>
+              <div class="quick-stats">
+                <div class="stat-item">
+                  <span class="stat-label">平均位移:</span>
+                  <span class="stat-value" id="avgDisplacement">3.2mm</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">最大应变:</span>
+                  <span class="stat-value" id="maxStrain">156μe</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">数据更新:</span>
+                  <span class="stat-value" id="lastUpdate">刚刚</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -406,30 +507,37 @@
           </div>
           
           <div class="analysis-content">
-            <div class="analysis-charts">
-              <div class="chart-item">
+            <!-- 主要图表区域 -->
+            <div class="main-charts">
+              <div class="chart-item large-chart">
                 <h4>位移趋势分析</h4>
-                <canvas id="displacementChart" width="400" height="200"></canvas>
-              </div>
-              
-              <div class="chart-item">
-                <h4>应变分布热图</h4>
-                <div class="heatmap-container" id="strainHeatmap">
-                  <!-- 热力图 -->
-                  <div class="heatmap-grid">
-                    <div class="heatmap-cell" data-value="20"></div>
-                    <div class="heatmap-cell" data-value="45"></div>
-                    <div class="heatmap-cell" data-value="30"></div>
-                    <div class="heatmap-cell" data-value="80"></div>
-                    <div class="heatmap-cell" data-value="60"></div>
-                    <div class="heatmap-cell" data-value="35"></div>
-                  </div>
+                <div class="chart-wrapper">
+                  <canvas id="displacementChart"></canvas>
                 </div>
               </div>
               
-              <div class="chart-item">
-                <h4>告警统计</h4>
-                <canvas id="alertsChart" width="400" height="200"></canvas>
+              <div class="secondary-charts">
+                <div class="chart-item">
+                  <h4>应变分布热图</h4>
+                  <div class="heatmap-container" id="strainHeatmap">
+                    <!-- 热力图 -->
+                    <div class="heatmap-grid">
+                      <div class="heatmap-cell" data-value="20"></div>
+                      <div class="heatmap-cell" data-value="45"></div>
+                      <div class="heatmap-cell" data-value="30"></div>
+                      <div class="heatmap-cell" data-value="80"></div>
+                      <div class="heatmap-cell" data-value="60"></div>
+                      <div class="heatmap-cell" data-value="35"></div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="chart-item">
+                  <h4>告警统计</h4>
+                  <div class="chart-wrapper">
+                    <canvas id="alertsChart"></canvas>
+                  </div>
+                </div>
               </div>
             </div>
             
